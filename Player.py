@@ -1,14 +1,15 @@
-import socket
+from typing import List
 from Card import Card
-from utils.RenderBoard import render_cards_grid
+from renderers.BoardRenderer import BoardRenderer
 
 
 class Player:
 
-    def __init__(self, name: str, conn: socket.socket):
+    def __init__(self, name: str, conn, addr):
         self.name = name
-        self.conn = conn  # Socket connection to player
-        self.cards = []
+        self.conn = conn
+        self.addr = addr
+        self.cards: List[Card] = []
         self.penaltyPoints = 0
 
     def getName(self) -> str:
@@ -29,47 +30,62 @@ class Player:
     def addPenaltyPoints(self, points: int):
         self.penaltyPoints += points
 
-    def send_message(self, message: str):
-        """Send a message to the player via socket."""
-        self.conn.sendall(message.encode())
+    def sendMessage(self, message: str):
+        try:
+            self.conn.sendall(message.encode())
+        except Exception as e:
+            print(f"Error sending message to {self.name}: {e}")
 
-    def receive_message(self) -> str:
-        """Receive a complete message (line) from the player via socket."""
-        data = b""
+    def receiveMessage(self) -> str:
+        try:
+            return self.conn.recv(1024).decode().strip()
+        except Exception as e:
+            print(f"Error receiving message from {self.name}: {e}")
+            return ""
+
+
+    def playCard(self, boardRows, allPlayers: List['Player'], renderer: BoardRenderer) -> dict:
         while True:
-            chunk = self.conn.recv(1024)
-            if b"\n" in chunk:
-                data += chunk.split(b"\n")[0]  # Add the part before the newline
-                break
-            else:
-                data += chunk
-        return data.decode().strip()  # Return the entire message as a string
+            view = [
+                renderer.clearScreen(),
+                renderer.renderHeader(),
+                renderer.renderGameBoard(boardRows, allPlayers),
+                renderer.renderHand(self),
+                renderer.renderFooter(),
+                renderer.renderPrompt()
+            ]
+            self.sendMessage("\n".join(view))
 
-
-    def playCard(self):
-        cardToPlay = None
-        while True:
-            self.send_message(f"Player {self.name}, your cards are:\n")
-            self.send_message(render_cards_grid(self.cards))
-            self.send_message(f"Player {self.name}, your penalty points are: {self.penaltyPoints}\n")
-            self.send_message(f"Choose a card to play: ")
+            inputStr = self.receiveMessage()
             try:
-                cardNum = int(self.receive_message())
-                cardFound = False
-                for i in range(len(self.cards)):
-                    if self.cards[i].getValue() == cardNum:
-                        cardFound = True
-                        cardToPlay = self.cards.pop(i)
-                        break
-                if cardFound:
-                    break
-                self.send_message("Invalid card number, try again.\n")
-            except ValueError as e:
-                self.send_message("Invalid command, try again\n")
+                cardNum = int(inputStr)
+            except ValueError:
+                self.sendMessage("Invalid input. Enter a number.\n")
+                continue
 
-        return {"card": cardToPlay, "player": self}
+            for i, card in enumerate(self.cards):
+                if card.getValue() == cardNum:
+                    selected = self.cards.pop(i)
+                    return {"card": selected, "player": self}
 
-    def getRowToAdd(self, card: Card) -> int:
-        self.send_message(f"Choose a row to add {card} to: ")
-        inputRow = int(self.receive_message())
-        return inputRow
+            self.sendMessage("Card not in hand. Try again.\n")
+
+    def getRowToAdd(self, card: Card, boardRows, allPlayers: List['Player'], renderer: BoardRenderer) -> int:
+        view = [
+                renderer.clearScreen(),
+                renderer.renderHeader(),
+                renderer.renderGameBoard(boardRows, allPlayers),
+                renderer.renderHand(self),
+                renderer.renderFooter(),
+            ]
+        self.sendMessage("\n".join(view))
+        self.sendMessage(f"\n Choose a row (0-3) to add card {card} to: ")
+        while True:
+            response = self.receiveMessage()
+            try:
+                rowIndex = int(response)
+                if 0 <= rowIndex <= 3:
+                    return rowIndex
+            except ValueError:
+                pass
+            self.sendMessage("Invalid row number. Try again (0-3): ")
