@@ -1,0 +1,2 @@
+class SmallestCardOnRightException(Exception):
+    pass

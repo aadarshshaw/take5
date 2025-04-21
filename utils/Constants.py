@@ -1,0 +1,11 @@
+class Constants:
+
+    TOTAL_CARDS = 30
+    ROWS = 4
+    COLUMNS = 5
+    MIN_PLAYERS = 2
+    MAX_PLAYERS = 10
+    CARDS_PER_HAND = 10
+    MAX_PENALTY_POINTS = 10
+    CLEAR_SCREEN = "\033[2J\033[H"
+    CARD_HEIGHT = 4
