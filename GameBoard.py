@@ -4,7 +4,6 @@ from Card import Card
 from collections import deque
 import math
 
-
 class Board:
 
     def __init__(self):

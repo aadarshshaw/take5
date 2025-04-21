@@ -1,17 +1,55 @@
+# -*- coding: utf-8 -*-
+from Player import Player
 from utils.Constants import Constants
 
 class RoomRenderer:
+
+    WIDTH = 100
+    
     def __init__(self):
         pass
 
-    def renderRoomHeader(self, roomName: str) -> str:
-        return "\033[2J\033[H" + f"=== ROOM: {roomName} ===\n"
+    def renderRoomScreen(self, roomName: str, players: list[Player], started: bool, logs: list[str]) -> str:
+        output = [Constants.CLEAR_SCREEN]
 
-    def renderPlayers(self, players) -> str:
-        output = "Connected Players:\n"
-        for p in players:
-            output += f"- {p.getName()} (Penalty: {p.getPenaltyPoints()} pts)\n"
-        return output
+        # Header
+        header = f" ROOM: {roomName} "
+        output.append(f"+{header:─^95}+")
+        output.append("|                                                                                               |")
+        status = "In-Game" if started else "Waiting for players..."
+        output.append(f"|  Status: {status:<85}|")
+        output.append("|                                                                                               |")
+        output.append("|  Players:                                                                                     |")
+
+        # Player Table Header
+        output.append("|  ┌────────────────────────────────────────────┐                                               |")
+        output.append("|  │ Name                                       │                                               |")
+        output.append("|  ├────────────────────────────────────────────┤                                               |")
+
+        # Player Rows
+        if not players:
+            output.append("|  │ No players joined yet                      │                                               |")
+        else:
+            for player in players:
+                name = player.getName()[:42]
+                output.append(f"|  │ {name:<42} │                                               |")
+
+        output.append("|  └────────────────────────────────────────────┘                                               |")
+        output.append("|                                                                                               |")
+
+        # Logs Table
+        output.append("|  Logs:                                                                                        |")
+        output.append("|  ┌────────────────────────────────────────────────────────────────────────────────────────┐   |")
+        if logs:
+            for log in logs[-5:]:  # Last 5 logs
+                output.append(f"|  │ {log:<87}|   |")
+        else:
+            output.append("|  │ No logs yet.                                                                           │   |")
+        output.append("|  └────────────────────────────────────────────────────────────────────────────────────────┘   |")
+        output.append("|                                                                                               |")
+        output.append("+───────────────────────────────────────────────────────────────────────────────────────────────+")
+
+        return "\n".join(output)
 
     def renderInstructions(self, canStart: bool) -> str:
         if canStart:
@@ -19,9 +57,8 @@ class RoomRenderer:
         else:
             return f"\nWaiting for more players to join...\n"
 
-    def renderRoom(self, roomName: str, players, canStart: bool) -> str:
+    def renderRoom(self, roomName: str, players, canStart: bool, gameStarted: bool, logs: list[str]) -> str:
         return (
-            self.renderRoomHeader(roomName) +
-            self.renderPlayers(players) +
+            self.renderRoomScreen(roomName, players, gameStarted, logs) +
             self.renderInstructions(canStart)
         )

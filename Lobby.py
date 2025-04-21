@@ -1,7 +1,7 @@
 import socket
 import threading
 from Player import Player
-from renderers.LobbyRenederer import LobbyRenderer
+from renderers.LobbyRenderer import LobbyRenderer
 from Room import Room
 from utils.Constants import Constants
 
@@ -33,7 +33,14 @@ class Lobby:
             thread.start()
 
         server.close()
-    
+
+    def sendInstructions(self, conn):
+        with open("utils/instructions.txt", "r", encoding="utf-8") as f:
+            instructions = f.read()
+        conn.sendall(Constants.CLEAR_SCREEN.encode())
+        conn.sendall(instructions.encode())
+        conn.recv(1024)  # Wait for the player to read the instructions
+
     def handlePlayerInput(self, conn, addr):
         try:
             conn.sendall(b"Enter your name: ")
@@ -43,8 +50,8 @@ class Lobby:
             new_player = Player(name, conn, addr)
 
             while True:
-                conn.sendall(self.lobbyRenderer.renderLobby(self.rooms).encode())
-                conn.sendall(b"\nChoose an option:\n1. Create a room\n2. Join a room\n3. Exit\n> ")
+                conn.sendall(self.lobbyRenderer.renderLobby(name, self.rooms).encode())
+                conn.sendall(b"\n Choose an option:  ")
                 option = conn.recv(1024).decode().strip()
 
                 if option == "1":
@@ -56,10 +63,7 @@ class Lobby:
                     if room_name in self.rooms:
                         conn.sendall(b"Room already exists. Try again.\n")
                     else:
-                        if password:
-                            room = Room(name=room_name, password=password)
-                        else:
-                            room = Room(name=room_name)
+                        room = Room(name=room_name, password=password if password else None)
                         self.addRoom(room)
                         room.addPlayer(new_player)
                         conn.sendall(f"Room '{room_name}' created and joined successfully!\n".encode())
@@ -76,7 +80,6 @@ class Lobby:
 
                     if room_name in self.rooms:
                         room = self.rooms[room_name]
-
                         if room.hasGameStarted():
                             conn.sendall(b"Room is already in progress. Try again.\n")
                             continue
@@ -87,19 +90,23 @@ class Lobby:
                             if password != room.password:
                                 conn.sendall(b"Wrong password. Try again.\n")
                                 continue
-                        
+
                         room.addPlayer(new_player)
                         conn.sendall(f"Joined room '{room_name}' successfully!\n".encode())
                         break
                     else:
                         conn.sendall(b"Room not found. Try again.\n")
+
                 elif option == "3":
+                    self.sendInstructions(conn)
+
+                elif option == "4":
                     conn.sendall(b"Goodbye!\n")
                     conn.close()
                     break
+
                 else:
-                    conn.sendall(b"Invalid option. Please enter 1 or 2.\n")
+                    conn.sendall(b"Invalid option. Please enter 1, 2, 3 or 4.\n")
         except Exception as e:
             print(f"[ERROR] {e}")
             conn.close()
-        

@@ -89,3 +89,6 @@ class Player:
             except ValueError:
                 pass
             self.sendMessage("Invalid row number. Try again (0-3): ")
+        
+    def closeConnection(self):
+        self.conn.close()

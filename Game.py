@@ -1,6 +1,4 @@
-import socket
 import random
-import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
 from Card import Card
@@ -9,6 +7,7 @@ from GameBoard import Board
 from exceptions.SmallestCardOnRightException import SmallestCardOnRightException
 from renderers.BoardRenderer import BoardRenderer
 from utils.Constants import Constants
+from utils.getBulls import getBulls
 
 
 class Game:
@@ -17,7 +16,7 @@ class Game:
         self.gameStarted = False
         self.entryStopped = False
         self.players: List[Player] = players
-        self.deck = [Card(i, random.choice([7])) for i in range(1, Constants.TOTAL_CARDS + 1)]
+        self.deck = [Card(i, getBulls(i)) for i in range(1, Constants.TOTAL_CARDS + 1)]
         self.shuffledDeck = random.sample(self.deck, k=Constants.TOTAL_CARDS)
         self.discardPile: List[Card] = []
         self.gameBoard = Board()

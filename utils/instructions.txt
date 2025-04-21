@@ -1,0 +1,42 @@
+===== Welcome to Take 5! =====
+
+🎯 Goal:
+- Avoid collecting penalty points (bulls 🐂)!
+- The player with the fewest bulls at the end wins.
+
+🃏 Game Overview:
+1. Each player starts with a hand of cards.
+2. All players select one card simultaneously per round.
+3. Cards are placed on one of four rows on the board.
+4. Cards are placed in ascending order, after the closest smaller card.
+5. If your card is smaller than the last card of every row, you must take a row.
+
+🔄 Example 1:
+Rows:
+[12]
+[25]
+[36]
+[48]
+
+You play: 30  
+→ Your card goes after [25] because it's the closest smaller number.
+→ That row becomes: [25, 30]
+
+🔄 Example 2:
+Rows:
+[72]
+[68]
+[61]
+[53]
+
+You play: 45  
+→ Your card is smaller than all last cards.
+→ You must choose a row to take and replace.
+→ The taken row’s cards are added to your penalty pile.
+
+🏁 Ending:
+- The game ends when someone reaches the max penalty points.
+- The player with the least penalty points wins!
+
+===============================
+Type any key to return to the menu...

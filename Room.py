@@ -18,7 +18,11 @@ class Room:
         self.Game: Game | None = None
         self.entryStopped: bool = False
         self.renderer = RoomRenderer()
+        self.logs = []
         self.waitForPlayers()
+    
+    def addLog(self, message:str):
+        self.logs.insert(0, message)
 
     def addPlayer(self, player: Player):
         if len(self.players) >= self.maxPlayers:
@@ -67,11 +71,15 @@ class Room:
                         response = first_player.conn.recv(1024).decode().strip().lower()
                         if response == "start":
                             self.stopEntry()
-                            self.start(self.players)
                             self.broadcast(f"\nGame is starting with {len(self.players)} players!\n")
+                            for i in range(5, 0, -1):
+                                self.broadcast(f"Starting in {i}...\n")
+                            self.start(self.players)
                             break
                     except Exception as e:
                         print(f"[ERROR] Could not communicate with the first player: {e}")
+                        print(f"[ERROR] Removing player from room: {first_player.getName()}")
+                        self.players[0].closeConnection()
                         time.sleep(2)
 
                 time.sleep(1)
@@ -79,7 +87,9 @@ class Room:
         thread = threading.Thread(target=wait_loop, daemon=True)
         thread.start()
 
-    def broadcast(self, message: str):
+    def broadcast(self, message: str, render: bool = False):
+        if not render: 
+            self.addLog(message.strip())
         for player in self.players:
             try:
                 player.sendMessage(message)
@@ -89,5 +99,5 @@ class Room:
     def updateRoomView(self):
         """Render and broadcast the current room state to all players."""
         canStart = len(self.players) >= Constants.MIN_PLAYERS
-        rendered = self.renderer.renderRoom(self.name, self.players, canStart)
-        self.broadcast(rendered)
+        rendered = self.renderer.renderRoom(self.name, self.players, canStart, self.gameStarted, self.logs)
+        self.broadcast(rendered, render = True)
